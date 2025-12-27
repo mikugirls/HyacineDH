@@ -1,6 +1,7 @@
 # HyacineDH
 
 **__此项目正在开发中！__**
+感谢StopWuyu及DanhengServer的其它开发者 - 本项目是3.4版本的Danheng Server的Fork仓库
 
 <p align="center">
 <a href="https://visualstudio.com"><img src="https://img.shields.io/badge/Visual%20Studio-000000.svg?style=for-the-badge&logo=visual-studio&logoColor=white" /></a>
