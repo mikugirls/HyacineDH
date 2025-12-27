@@ -8,10 +8,10 @@
 <a href="https://www.gnu.org/"><img src="https://img.shields.io/badge/GNU-000000.svg?style=for-the-badge&logo=GNU&logoColor=white" /></a>
 </p>
 <p align="center">
-  <a href="https://discord.gg/xRtZsmHBVj"><img src="https://img.shields.io/badge/Discord%20Server-000000.svg?style=for-the-badge&logo=Discord&logoColor=white" /></a>
+  <a href="https://discord.gg/AjBSd5rP5K"><img src="https://img.shields.io/badge/Discord%20Server-000000.svg?style=for-the-badge&logo=Discord&logoColor=white" /></a>
 </p>
 
-[EN](docs/README_en-US.md) | [簡中](README.md) | [繁中](README_zh-CN.md) | [JP](README_ja-JP.md)
+[EN](docs/README_en-US.md) | [簡中](README.md) | [繁中](docs/README_zh-CN.md) | [JP](docs/README_ja-JP.md)
 
 ## 💡功能
 
@@ -33,7 +33,7 @@
 
 ### 快速启动
 
-1. 在 [Action](https://github.com/StopWuyu/DanhengServer/actions) 下载可执行文件
+1. 在 [仓库发布页](https://github.com/DBKAHHK/HyacineDH/) 下载可执行文件 (暂时并未提供编译版本）
 2. 打开下载完成的 `DanhengServer.zip` 解压至任意文件夹 __*应当使用英文路径*__
 
 > (可选) 在源代码的WebServer文件夹中下载 `certificate.p12` 使得以HTTPS模式启动 ~~没有用处~~: )
@@ -53,8 +53,8 @@ DanhengServer 使用 .NET Framework 构建
 ##### Windows
 
 ```shell
-git clone --recurse-submodules https://github.com/StopWuyu/DanhengServer.git
-cd DanhengServer
+git clone --recurse-submodules https://github.com/DBKAHHK/HyacineDH.git
+cd .\HyacineDH
 .\dotnet build # 编译
 ```
 ##### Linux （Ubuntu 20.04）
@@ -71,7 +71,7 @@ sudo apt-get update && \
 
 - 编译并运行环境
 ```shell
-git clone --recurse-submodules https://github.com/StopWuyu/DanhengServer.git
+git clone --recurse-submodules https://github.com/DBKAHHK/HyacineDH.git
 cd DanhengServer
 .\dotnet build # 编译
 ./Gameserver
