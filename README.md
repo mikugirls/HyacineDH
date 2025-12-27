@@ -1,8 +1,7 @@
 # HyacineDH
 
 **__此项目正在开发中！__**
-感谢StopWuyu及DanhengServer的其它开发者 - 本项目是3.4版本的Danheng Server的Fork仓库
-服务器支持3.8正式版。
+原仓库地址: [https://github.com/EggLinks/DanhengServer-OpenSource](https://github.com/EggLinks/DanhengServer-OpenSource)
 
 <p align="center">
 <a href="https://visualstudio.com"><img src="https://img.shields.io/badge/Visual%20Studio-000000.svg?style=for-the-badge&logo=visual-studio&logoColor=white" /></a>
@@ -26,7 +25,7 @@
 - [√] **任务** - 并不支持
 - [√] **朋友** - 支持
 - [√] **忘却之庭 & 虚构叙事 & 末日幻影** - 异相仲裁正在开发中
-- [√] **模拟宇宙 & 黄金机械** - 你玩不了: )
+- [√] **模拟宇宙 & 黄金机械** - 无法游玩: )
 - [√] **成就** - 可用
 
 - [ ] **更多**  - Coming soon...
@@ -98,4 +97,4 @@ cd DanhengServer
 - [LunarCore](https://github.com/Melledy/LunarCore) - 一些数据结构和算法
 - C1enQwq - 提供一些代码，还有原型文件
 - Skuld - 我第一位测试者
-- StopWuyu及DanhengServer的其它开发者 - 本项目是3.4版本的Danheng Server的Fork仓库
+- StopWuyu及DanhengServer的其它开发者 - 本项目是DanhengServer的Fork仓库
