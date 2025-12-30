@@ -16,7 +16,6 @@ public class Logger(string moduleName)
             AnsiConsole.Write(new Markup($"[[[bold deepskyblue3_1]{DateTime.Now:HH:mm:ss}[/]]] " +
                              $"[[[bold hotpink3_1]{moduleName}[/]]] [[[{(ConsoleColor)level}]{level}[/]]] {message.Replace("[", "[[").Replace("]", "]]")}\n"));
 
-
             var logMessage = $"[{DateTime.Now:HH:mm:ss}] [{moduleName}] [{level}] {message}";
             PluginEventCommon.InvokeOnConsoleLog(logMessage);
 

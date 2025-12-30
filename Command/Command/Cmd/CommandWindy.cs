@@ -3,7 +3,7 @@ using EggLink.DanhengServer.Kcp;
 
 namespace EggLink.DanhengServer.Command.Command.Cmd;
 
-[CommandInfo("windy", "Kinda windy today!", "/windy <lua>")]
+[CommandInfo("windy", "Kinda windy today!加载lua脚本", "/windy <lua>")]
 public class CommandWindy : ICommand
 {
     [CommandDefault]

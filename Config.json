@@ -2,7 +2,7 @@
   "HttpServer": {
     "BindAddress": "0.0.0.0",
     "PublicAddress": "127.0.0.1",
-    "Port": 443,
+    "Port": 21000,
     "UseSSL": false
   },
   "KeyStore": {
@@ -19,11 +19,11 @@
     "UsePacketEncryption": true
   },
   "Path": {
-    "ResourcePath": "Resources",
-    "ConfigPath": "Config",
-    "DatabasePath": "Config/Database",
-    "LogPath": "Logs",
-    "PluginPath": "Plugins"
+    "ResourcePath": "D:\\Projects\\HyacineDH\\HyacineDH\\Resources",
+    "ConfigPath": "D:\\Projects\\HyacineDH\\HyacineDH\\Config",
+    "DatabasePath": "D:\\Projects\\HyacineDH\\HyacineDH\\Config\\Database",
+    "LogPath": "D:\\Projects\\HyacineDH\\HyacineDH\\Logs",
+    "PluginPath": "D:\\Projects\\HyacineDH\\HyacineDH\\Plugins"
   },
   "Database": {
     "DatabaseType": "sqlite",
@@ -65,6 +65,11 @@
       ]
     },
     "AutoCreateUser": true,
+    "ServerConfig": {
+      "RunDispatch": true,
+      "RunGateway": true,
+      "Regions": []
+    },
     "SavePersonalDebugFile": false,
     "FarmingDropRate": 1,
     "UseCache": true

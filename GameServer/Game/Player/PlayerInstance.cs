@@ -34,6 +34,7 @@ using EggLink.DanhengServer.GameServer.Game.TrainParty;
 using EggLink.DanhengServer.GameServer.Server;
 using EggLink.DanhengServer.GameServer.Server.Packet.Send.Lineup;
 using EggLink.DanhengServer.GameServer.Server.Packet.Send.MarkChest;
+using EggLink.DanhengServer.GameServer.Server.Packet.Send.Avatar;
 using EggLink.DanhengServer.GameServer.Server.Packet.Send.Player;
 using EggLink.DanhengServer.GameServer.Server.Packet.Send.PlayerSync;
 using EggLink.DanhengServer.GameServer.Server.Packet.Send.Scene;
@@ -123,6 +124,7 @@ public class PlayerInstance(PlayerData data)
     public bool IsNewPlayer { get; set; }
     public int NextBattleId { get; set; } = 0;
     public int ChargerNum { get; set; } = 0;
+    internal bool IsSceneLoading { get; private set; }
 
     #endregion
 
@@ -308,6 +310,8 @@ public class PlayerInstance(PlayerData data)
     {
         await SendPacket(new PacketStaminaInfoScNotify(this));
 
+        await SyncUnlockedAvatarSkins();
+
         ChallengeManager?.ResurrectInstance();
         if (StoryLineManager != null)
             await StoryLineManager.OnLogin();
@@ -316,6 +320,16 @@ public class PlayerInstance(PlayerData data)
             await RaidManager.OnLogin();
 
         InvokeOnPlayerLogin(this);
+    }
+
+    private async ValueTask SyncUnlockedAvatarSkins()
+    {
+        if (PlayerUnlockData?.Skins == null) return;
+        foreach (var (_, skinIds) in PlayerUnlockData.Skins)
+        {
+            foreach (var skinId in skinIds.Distinct())
+                await SendPacket(new PacketUnlockAvatarSkinScNotify(skinId));
+        }
     }
 
     public void OnLogoutAsync()
@@ -374,13 +388,22 @@ public class PlayerInstance(PlayerData data)
 
     public async ValueTask ChangeAvatarSkin(int avatarId, int skinId)
     {
-        PlayerUnlockData!.Skins.TryGetValue(avatarId, out var skins);
-        if (skins != null && (skins.Contains(skinId) || skinId == 0))
+        if (AvatarManager == null || PlayerUnlockData == null) return;
+
+        var avatar = AvatarManager.GetFormalAvatar(avatarId);
+        if (avatar == null) return;
+
+        if (skinId != 0)
         {
-            var avatar = AvatarManager!.GetFormalAvatar(avatarId)!;
-            avatar.GetPathInfo(avatarId)!.Skin = skinId;
-            await SendPacket(new PacketPlayerSyncScNotify(avatar));
+            if (!GameData.AvatarSkinData.TryGetValue(skinId, out var skinExcel)) return;
+            if (skinExcel.AvatarID != avatarId) return;
+
+            PlayerUnlockData.Skins.TryGetValue(avatarId, out var skins);
+            if (skins == null || !skins.Contains(skinId)) return;
         }
+
+        avatar.GetCurPathInfo().Skin = skinId;
+        await SendPacket(new PacketPlayerSyncScNotify(avatar));
     }
 
     public async ValueTask<FormalAvatarInfo> MarkAvatar(int avatarId, bool isMarked, bool sendPacket = true)
@@ -818,6 +841,9 @@ public class PlayerInstance(PlayerData data)
     public async ValueTask LoadScene(int planeId, int floorId, int entryId, Position pos, Position rot, bool sendPacket,
         bool mapTp = false)
     {
+        IsSceneLoading = true;
+        try
+        {
         GameData.MazePlaneData.TryGetValue(planeId, out var plane);
         if (plane == null) return;
 
@@ -855,6 +881,10 @@ public class PlayerInstance(PlayerData data)
             Data.PlaneId = planeId;
             Data.FloorId = floorId;
             Data.EntryId = entryId;
+
+            // LevelGraph 的 OnInit/OnStart 触发放到场景实例构造完成之后（但在发 EnterScene 包之前），
+            // 避免 SceneInstance 构造期间触发 EnterMap 导致递归 LoadScene（最终栈溢出崩溃）。
+            TaskManager?.SceneTaskTrigger.TriggerFloor(planeId, floorId);
         }
         else if (StoryLineManager?.StoryLineData.CurStoryLineId == 0 &&
                  mapTp) // only send move packet when not in story line and mapTp
@@ -877,6 +907,11 @@ public class PlayerInstance(PlayerData data)
             await MissionManager.HandleFinishType(MissionFinishTypeEnum.EnterPlane);
             await MissionManager.HandleFinishType(MissionFinishTypeEnum.NotInFloor);
             await MissionManager.HandleFinishType(MissionFinishTypeEnum.NotInPlane);
+        }
+        }
+        finally
+        {
+            IsSceneLoading = false;
         }
     }
 

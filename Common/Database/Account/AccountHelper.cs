@@ -6,7 +6,7 @@ public static class AccountHelper
 {
     public static void CreateAccount(string username, int uid)
     {
-        username = username.Trim();
+        username = AccountData.NormalizeUsername(username);
         if (AccountData.GetAccountByUserName(username) != null) throw new Exception("Account already exists");
         if (AccountData.GetAccountByUid(uid) != null)
         {

@@ -14,6 +14,7 @@ using EggLink.DanhengServer.Internationalization;
 using EggLink.DanhengServer.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Globalization;
 
 namespace EggLink.DanhengServer.Data;
 
@@ -115,9 +116,10 @@ public class ResourceManager
                             // array
                             var jArray = JArray.Parse(json);
                             
-                            // ★ 在这里先过滤掉所有 { "Hash": xxx } 字段
+                            // Normalize { "Hash": <uint64> } containers so they deserialize into `long` safely
+                            // (many hashes exceed Int64.MaxValue; we store them as unchecked Int64 and convert back when needed).
 
-                            StripHashObjects(jArray);
+                            NormalizeHashObjects(jArray);
                             foreach (var item in jArray)
                             {
                                 var res = JsonConvert.DeserializeObject(item.ToString(), cls);
@@ -132,8 +134,8 @@ public class ResourceManager
                         {
                             // dictionary
                             var jObject = JObject.Parse(json);
-                            // ★ 同样先过滤掉所有 { "Hash": xxx } 字段
-                            StripHashObjects(jObject);
+                            // Normalize { "Hash": <uint64> } containers (see above).
+                            NormalizeHashObjects(jObject);
                             foreach (var (_, obj) in jObject)
                             {
                                 var instance = JsonConvert.DeserializeObject(obj!.ToString(), cls);
@@ -182,13 +184,10 @@ public class ResourceManager
     }
 
 
-private static void StripHashObjects(JToken token)
+private static void NormalizeHashObjects(JToken token)
 {
     if (token is JObject obj)
     {
-        // 先收集要删的字段，避免边遍历边修改集合
-        var toRemove = new List<JProperty>();
-
         foreach (var prop in obj.Properties())
         {
             // 如果这个字段的值是一个 object
@@ -197,24 +196,33 @@ private static void StripHashObjects(JToken token)
                 // 且形态是严格的 { "Hash": xxx }
                 if (valueObj.Count == 1 && valueObj.Property("Hash") != null)
                 {
-                    // 说明这是那种“文本 Hash 容器”，可以整个忽略
-                    toRemove.Add(prop);
-                    continue;
+                    var hashProp = valueObj.Property("Hash")!;
+                    var raw = hashProp.Value?.ToString();
+                    if (!string.IsNullOrWhiteSpace(raw))
+                    {
+                        // Prefer parsing as ulong to preserve the original 64-bit hash.
+                        if (ulong.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var u))
+                        {
+                            hashProp.Value = new JValue(unchecked((long)u));
+                        }
+                        else if (long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var l))
+                        {
+                            hashProp.Value = new JValue(l);
+                        }
+                    }
+
+                    continue; // Do not recurse into a leaf hash container
                 }
             }
 
             // 递归处理子节点（嵌套数组 / 对象里也可能有这样的结构）
-            StripHashObjects(prop.Value);
+            NormalizeHashObjects(prop.Value);
         }
-
-        // 统一删除这些字段
-        foreach (var prop in toRemove)
-            prop.Remove();
     }
     else if (token is JArray arr)
     {
         foreach (var element in arr)
-            StripHashObjects(element);
+            NormalizeHashObjects(element);
     }
 }
 

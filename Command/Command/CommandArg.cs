@@ -10,25 +10,44 @@ public class CommandArg
     {
         Raw = raw;
         Sender = sender;
-        var args = raw.Split(' ');
-        foreach (var arg in args)
+        var args = raw.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        for (var i = 0; i < args.Length; i++)
         {
+            var arg = args[i];
             if (string.IsNullOrEmpty(arg)) continue;
-            var character = arg[0];
-            if (!int.TryParse(character.ToString(), out _) && character != '-')
+
+            // Support flags split by whitespace: `r 6`, `-r 6`, `l 80`, etc.
+            if (i + 1 < args.Length && IsSingleLetterFlag(arg))
             {
-                try
-                {
-                    CharacterArgs.Add(arg[..1], arg[1..]);
-                    Args.Add(arg);
-                }
-                catch
-                {
-                    BasicArgs.Add(arg);
-                    Args.Add(arg);
-                }
+                var key = arg.StartsWith('-') ? arg[1].ToString() : arg[0].ToString();
+                var value = args[i + 1];
+
+                if (!CharacterArgs.ContainsKey(key))
+                    CharacterArgs.Add(key, value);
+
+                Args.Add(arg);
+
+                // Preserve previous behavior where numeric values are still part of BasicArgs/Args.
+                if (IsBasicArg(value)) BasicArgs.Add(value);
+                Args.Add(value);
+
+                i++; // consume value
+                continue;
             }
-            else
+
+            if (IsBasicArg(arg))
+            {
+                BasicArgs.Add(arg);
+                Args.Add(arg);
+                continue;
+            }
+
+            try
+            {
+                CharacterArgs.Add(arg[..1], arg[1..]);
+                Args.Add(arg);
+            }
+            catch
             {
                 BasicArgs.Add(arg);
                 Args.Add(arg);
@@ -61,6 +80,22 @@ public class CommandArg
     public async ValueTask SendMsg(string msg)
     {
         await Sender.SendMsg(msg);
+    }
+
+    private static bool IsBasicArg(string arg)
+    {
+        if (string.IsNullOrEmpty(arg)) return false;
+        var character = arg[0];
+        return int.TryParse(character.ToString(), out _) || character == '-';
+    }
+
+    private static bool IsSingleLetterFlag(string arg)
+    {
+        if (arg.Length == 1)
+            return !IsBasicArg(arg);
+        if (arg.Length == 2 && arg[0] == '-' && !IsBasicArg(arg[1].ToString()))
+            return true;
+        return false;
     }
 
     public override string ToString()

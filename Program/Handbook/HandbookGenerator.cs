@@ -21,7 +21,8 @@ public static class HandbookGenerator
 
         foreach (var langFile in directory.GetFiles())
         {
-            if (langFile.Extension != ".json") return;
+            if (langFile.Extension != ".json") continue;
+            if (langFile.Name.StartsWith("TextMapMain", StringComparison.OrdinalIgnoreCase)) continue;
             var lang = langFile.Name.Replace("TextMap", "").Replace(".json", "");
 
             // Check if handbook needs to regenerate
@@ -43,33 +44,9 @@ public static class HandbookGenerator
     public static void Generate(string lang)
     {
         var config = ConfigManager.Config;
-        var textMapPath = config.Path.ResourcePath + "/TextMap/TextMap" + lang + ".json";
-        var fallbackTextMapPath = config.Path.ResourcePath + "/TextMap/TextMap" + config.ServerOption.FallbackLanguage +
-                                  ".json";
-        if (!File.Exists(textMapPath))
-        {
-            Logger.GetByClassName().Error(I18NManager.Translate("Server.ServerInfo.FailedToReadItem", textMapPath,
-                I18NManager.Translate("Word.NotFound")));
-            return;
-        }
-
-        if (!File.Exists(fallbackTextMapPath))
-        {
-            Logger.GetByClassName().Error(I18NManager.Translate("Server.ServerInfo.FailedToReadItem", textMapPath,
-                I18NManager.Translate("Word.NotFound")));
-            return;
-        }
-
-        var textMap = JsonConvert.DeserializeObject<Dictionary<long, string>>(File.ReadAllText(textMapPath));
-        var fallbackTextMap =
-            JsonConvert.DeserializeObject<Dictionary<long, string>>(File.ReadAllText(fallbackTextMapPath));
-
-        if (textMap == null || fallbackTextMap == null)
-        {
-            Logger.GetByClassName().Error(I18NManager.Translate("Server.ServerInfo.FailedToReadItem", textMapPath,
-                I18NManager.Translate("Word.Error")));
-            return;
-        }
+        var textMap = LoadMergedTextMap(lang);
+        var fallbackTextMap = LoadMergedTextMap(config.ServerOption.FallbackLanguage);
+        if (textMap == null || fallbackTextMap == null) return;
 
         var builder = new StringBuilder();
         builder.AppendLine("#Handbook generated in " + DateTime.Now.ToString("yyyy/MM/dd HH:mm"));
@@ -139,102 +116,125 @@ public static class HandbookGenerator
         }
     }
 
-    public static void GenerateItem(StringBuilder builder, Dictionary<long, string> map,
-        Dictionary<long, string> fallback, bool setName)
+    public static void GenerateItem(StringBuilder builder, Dictionary<ulong, string> map,
+        Dictionary<ulong, string> fallback, bool setName)
     {
         foreach (var item in GameData.ItemConfigData.Values)
         {
-            var name = map.TryGetValue(item.ItemName.Hash, out var value) ? value :
-                fallback.TryGetValue(item.ItemName.Hash, out value) ? value : $"[{item.ItemName.Hash}]";
+            var key = ToTextMapKey(item.ItemName.Hash);
+            var name = map.TryGetValue(key, out var value)
+                ? value
+                : fallback.TryGetValue(key, out value)
+                    ? value
+                    : $"[{key}]";
             builder.AppendLine(item.ID + ": " + name);
 
-            if (setName && name != $"[{item.ItemName.Hash}]") item.Name = name;
+            if (setName && name != $"[{key}]") item.Name = name;
         }
     }
 
-    public static void GenerateAvatar(StringBuilder builder, Dictionary<long, string> map,
-        Dictionary<long, string> fallback, bool setName)
+    public static void GenerateAvatar(StringBuilder builder, Dictionary<ulong, string> map,
+        Dictionary<ulong, string> fallback, bool setName)
     {
         foreach (var avatar in GameData.AvatarConfigData.Values)
         {
-            var name = map.TryGetValue(avatar.AvatarName.Hash, out var value) ? value :
-                fallback.TryGetValue(avatar.AvatarName.Hash, out value) ? value : $"[{avatar.AvatarName.Hash}]";
+            var key = ToTextMapKey(avatar.AvatarName.Hash);
+            var name = map.TryGetValue(key, out var value)
+                ? value
+                : fallback.TryGetValue(key, out value)
+                    ? value
+                    : $"[{key}]";
             builder.AppendLine(avatar.AvatarID + ": " + name);
 
-            if (setName && name != $"[{avatar.AvatarName.Hash}]") avatar.Name = name;
+            if (setName && name != $"[{key}]") avatar.Name = name;
         }
     }
 
-    public static void GenerateMainMissionId(StringBuilder builder, Dictionary<long, string> map,
-        Dictionary<long, string> fallback)
+    public static void GenerateMainMissionId(StringBuilder builder, Dictionary<ulong, string> map,
+        Dictionary<ulong, string> fallback)
     {
         foreach (var mission in GameData.MainMissionData.Values)
         {
-            var name = map.TryGetValue(mission.Name.Hash, out var value) ? value :
-                fallback.TryGetValue(mission.Name.Hash, out value) ? value : $"[{mission.Name.Hash}]";
+            var key = ToTextMapKey(mission.Name.Hash);
+            var name = map.TryGetValue(key, out var value)
+                ? value
+                : fallback.TryGetValue(key, out value)
+                    ? value
+                    : $"[{key}]";
             builder.AppendLine(mission.MainMissionID + ": " + name);
         }
     }
 
-    public static void GenerateSubMissionId(StringBuilder builder, Dictionary<long, string> map,
-        Dictionary<long, string> fallback)
+    public static void GenerateSubMissionId(StringBuilder builder, Dictionary<ulong, string> map,
+        Dictionary<ulong, string> fallback)
     {
         foreach (var mission in GameData.SubMissionData.Values)
         {
-            var name = map.TryGetValue(mission.TargetText.Hash, out var value) ? value :
-                fallback.TryGetValue(mission.TargetText.Hash, out value) ? value : $"[{mission.TargetText.Hash}]";
+            var key = ToTextMapKey(mission.TargetText.Hash);
+            var name = map.TryGetValue(key, out var value)
+                ? value
+                : fallback.TryGetValue(key, out value)
+                    ? value
+                    : $"[{key}]";
             builder.AppendLine(mission.SubMissionID + ": " + name);
         }
     }
 
-    public static void GenerateStageId(StringBuilder builder, Dictionary<long, string> map,
-        Dictionary<long, string> fallback)
+    public static void GenerateStageId(StringBuilder builder, Dictionary<ulong, string> map,
+        Dictionary<ulong, string> fallback)
     {
         foreach (var stage in GameData.StageConfigData.Values)
         {
-            var name = map.TryGetValue(stage.StageName.Hash, out var value) ? value :
-                fallback.TryGetValue(stage.StageName.Hash, out value) ? value : $"[{stage.StageName.Hash}]";
+            var key = ToTextMapKey(stage.StageName.Hash);
+            var name = map.TryGetValue(key, out var value)
+                ? value
+                : fallback.TryGetValue(key, out value)
+                    ? value
+                    : $"[{key}]";
             builder.AppendLine(stage.StageID + ": " + name);
         }
     }
 
-    public static void GenerateRogueBuff(StringBuilder builder, Dictionary<long, string> map,
-        Dictionary<long, string> fallback, bool setName)
+    public static void GenerateRogueBuff(StringBuilder builder, Dictionary<ulong, string> map,
+        Dictionary<ulong, string> fallback, bool setName)
     {
         foreach (var buff in GameData.RogueMazeBuffData)
         {
-            var name = map.TryGetValue(buff.Value.BuffName.Hash, out var value)
+            var key = ToTextMapKey(buff.Value.BuffName.Hash);
+            var name = map.TryGetValue(key, out var value)
                 ? value
-                : fallback.TryGetValue(buff.Value.BuffName.Hash, out value)
+                : fallback.TryGetValue(key, out value)
                     ? value
-                    : $"[{buff.Value.BuffName.Hash}]";
+                    : $"[{key}]";
             builder.AppendLine(buff.Key + ": " + name + " --- Level:" + buff.Value.Lv);
 
-            if (setName && name != $"[{buff.Value.BuffName.Hash}]") buff.Value.Name = name;
+            if (setName && name != $"[{key}]") buff.Value.Name = name;
         }
     }
 
-    public static void GenerateRogueMiracleDisplay(StringBuilder builder, Dictionary<long, string> map,
-        Dictionary<long, string> fallback, bool setName)
+    public static void GenerateRogueMiracleDisplay(StringBuilder builder, Dictionary<ulong, string> map,
+        Dictionary<ulong, string> fallback, bool setName)
     {
         foreach (var display in GameData.RogueMiracleData.Values)
         {
-            var name = map.TryGetValue(display.MiracleName.Hash, out var value)
+            var key = ToTextMapKey(display.MiracleName.Hash);
+            var name = map.TryGetValue(key, out var value)
                 ? value
-                : fallback.TryGetValue(display.MiracleName.Hash, out value)
+                : fallback.TryGetValue(key, out value)
                     ? value
-                    : $"[{display.MiracleName.Hash}]";
+                    : $"[{key}]";
             builder.AppendLine(display.MiracleID + ": " + name);
 
-            if (setName && name != $"[{display.MiracleName.Hash}]") display.Name = name;
+            if (setName && name != $"[{key}]") display.Name = name;
         }
     }
 
-    public static string GetNameFromTextMap(long key, Dictionary<long, string> map, Dictionary<long, string> fallback)
+    public static string GetNameFromTextMap(long key, Dictionary<ulong, string> map, Dictionary<ulong, string> fallback)
     {
-        if (map.TryGetValue(key, out var value)) return value;
-        if (fallback.TryGetValue(key, out value)) return value;
-        return $"[{key}]";
+        var normalizedKey = ToTextMapKey(key);
+        if (map.TryGetValue(normalizedKey, out var value)) return value;
+        if (fallback.TryGetValue(normalizedKey, out value)) return value;
+        return $"[{normalizedKey}]";
     }
 
     public static void WriteToFile(string lang, string content)
@@ -242,24 +242,80 @@ public static class HandbookGenerator
         File.WriteAllText($"GM Handbook/GM Handbook {lang}.txt", content);
     }
 
+    private static ulong ToTextMapKey(long key)
+    {
+        return unchecked((ulong)key);
+    }
+
+    private static Dictionary<ulong, string>? LoadMergedTextMap(string lang)
+    {
+        var config = ConfigManager.Config;
+        var basePath = Path.Combine(config.Path.ResourcePath, "TextMap");
+
+        var primaryPath = Path.Combine(basePath, $"TextMap{lang}.json");
+        var mainPath = Path.Combine(basePath, $"TextMapMain{lang}.json");
+
+        var primary = LoadTextMapFile(primaryPath);
+        var main = LoadTextMapFile(mainPath);
+
+        // Some builds only ship one of them; merge to maximize hash coverage.
+        if (primary == null && main == null)
+        {
+            Logger.GetByClassName().Error(I18NManager.Translate("Server.ServerInfo.FailedToReadItem", primaryPath,
+                I18NManager.Translate("Word.NotFound")));
+            return null;
+        }
+
+        var merged = primary ?? new Dictionary<ulong, string>();
+        if (main != null)
+            foreach (var (k, v) in main)
+                merged[k] = v;
+
+        return merged;
+    }
+
+    private static Dictionary<ulong, string>? LoadTextMapFile(string path)
+    {
+        if (!File.Exists(path)) return null;
+
+        try
+        {
+            var map = JsonConvert.DeserializeObject<Dictionary<ulong, string>>(File.ReadAllText(path));
+            if (map == null)
+            {
+                Logger.GetByClassName().Error(I18NManager.Translate("Server.ServerInfo.FailedToReadItem", path,
+                    I18NManager.Translate("Word.Error")));
+            }
+            return map;
+        }
+        catch (Exception e)
+        {
+            Logger.GetByClassName().Error(I18NManager.Translate("Server.ServerInfo.FailedToReadItem", path,
+                I18NManager.Translate("Word.Error")), e);
+            return null;
+        }
+    }
+
 #if DEBUG
-    public static void GenerateRogueDiceSurfaceDisplay(StringBuilder builder, Dictionary<long, string> map,
-        Dictionary<long, string> fallback)
+    public static void GenerateRogueDiceSurfaceDisplay(StringBuilder builder, Dictionary<ulong, string> map,
+        Dictionary<ulong, string> fallback)
     {
         foreach (var display in GameData.RogueNousDiceSurfaceData.Values)
         {
-            var name = map.TryGetValue(display.SurfaceName.Hash, out var value)
+            var nameKey = ToTextMapKey(display.SurfaceName.Hash);
+            var name = map.TryGetValue(nameKey, out var value)
                 ? value
-                : fallback.TryGetValue(display.SurfaceName.Hash, out value)
+                : fallback.TryGetValue(nameKey, out value)
                     ? value
-                    : $"[{display.SurfaceName.Hash}]";
-            var desc = map.TryGetValue(display.SurfaceDesc.Hash, out var c) ? c : $"[{display.SurfaceDesc.Hash}]";
+                    : $"[{nameKey}]";
+            var descKey = ToTextMapKey(display.SurfaceDesc.Hash);
+            var desc = map.TryGetValue(descKey, out var c) ? c : $"[{descKey}]";
             builder.AppendLine(display.SurfaceID + ": " + name + "\n" + "Desc: " + desc);
         }
     }
 
-    public static void GenerateRogueDialogueDisplay(StringBuilder builder, Dictionary<long, string> map,
-        Dictionary<long, string> fallback)
+    public static void GenerateRogueDialogueDisplay(StringBuilder builder, Dictionary<ulong, string> map,
+        Dictionary<ulong, string> fallback)
     {
         foreach (var npc in GameData.RogueNPCData.Values.Where(x => x.RogueNpcConfig != null))
         {

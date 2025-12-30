@@ -16,6 +16,16 @@ public class PacketQuickStartCocoonStageScRsp : BasePacket
         SetData(rsp);
     }
 
+    public PacketQuickStartCocoonStageScRsp(Retcode retcode) : base(CmdIds.QuickStartCocoonStageScRsp)
+    {
+        var rsp = new QuickStartCocoonStageScRsp
+        {
+            Retcode = (uint)retcode
+        };
+
+        SetData(rsp);
+    }
+
     public PacketQuickStartCocoonStageScRsp(BattleInstance battle, int cocoonId, int wave) : base(
         CmdIds.QuickStartCocoonStageScRsp)
     {

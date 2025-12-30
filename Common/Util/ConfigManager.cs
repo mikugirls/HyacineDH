@@ -7,8 +7,8 @@ namespace EggLink.DanhengServer.Util;
 public static class ConfigManager
 {
     public static readonly Logger Logger = new("ConfigManager");
-    private static readonly string ConfigFilePath = "Config.json";
-    private static string HotfixFilePath => Config.Path.ConfigPath + "/Hotfix.json";
+    private static readonly string ConfigFileName = "Config.json";
+    private static string HotfixFilePath => Path.Combine(Config.Path.ConfigPath, "Hotfix.json");
     public static ConfigContainer Config { get; private set; } = new();
     public static HotfixContainer Hotfix { get; private set; } = new();
 
@@ -16,11 +16,15 @@ public static class ConfigManager
     {
         LoadConfigData();
         LoadHotfixData();
+        InitDirectories();
     }
 
     private static void LoadConfigData()
     {
-        var file = new FileInfo(ConfigFilePath);
+        var configFilePath = ResolveConfigFilePath();
+        Logger.Info($"Config path: {configFilePath}");
+
+        var file = new FileInfo(configFilePath);
         if (!file.Exists)
         {
             Config = new ConfigContainer
@@ -37,7 +41,7 @@ public static class ConfigManager
 
             Logger.Info("Current Language is " + Config.ServerOption.Language);
             Logger.Info("Muipserver Admin key: " + Config.MuipServer.AdminKey);
-            SaveData(Config, ConfigFilePath);
+            SaveData(Config, file.FullName);
         }
 
         using (var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -50,7 +54,8 @@ public static class ConfigManager
             })!;
         }
 
-        SaveData(Config, ConfigFilePath);
+        NormalizePaths(file.DirectoryName ?? Directory.GetCurrentDirectory());
+        SaveData(Config, file.FullName);
     }
 
     private static void LoadHotfixData()
@@ -99,6 +104,44 @@ public static class ConfigManager
         using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
         using var writer = new StreamWriter(stream);
         writer.Write(json);
+    }
+
+    private static string ResolveConfigFilePath()
+    {
+        var env = Environment.GetEnvironmentVariable("DANHENG_CONFIG");
+        if (!string.IsNullOrWhiteSpace(env))
+            return Path.GetFullPath(env);
+
+        // Prefer config next to the solution file if this repo uses a nested solution directory (common in this workspace).
+        var cwd = Directory.GetCurrentDirectory();
+
+        var nestedSln = Path.Combine(cwd, "HyacineDH", "DanhengServer.sln");
+        if (File.Exists(nestedSln))
+            return Path.Combine(cwd, "HyacineDH", ConfigFileName);
+
+        var localSln = Path.Combine(cwd, "DanhengServer.sln");
+        if (File.Exists(localSln))
+            return Path.Combine(cwd, ConfigFileName);
+
+        // Fallback: if there's a Config.json in current dir, use it; otherwise create one here.
+        return Path.Combine(cwd, ConfigFileName);
+    }
+
+    private static void NormalizePaths(string configRootDir)
+    {
+        foreach (var property in Config.Path.GetType().GetProperties())
+        {
+            if (property.PropertyType != typeof(string)) continue;
+
+            var value = property.GetValue(Config.Path) as string;
+            if (string.IsNullOrWhiteSpace(value)) continue;
+
+            var normalized = value.Replace('/', Path.DirectorySeparatorChar);
+            if (!Path.IsPathRooted(normalized))
+                normalized = Path.GetFullPath(Path.Combine(configRootDir, normalized));
+
+            property.SetValue(Config.Path, normalized);
+        }
     }
 
     public static void InitDirectories()

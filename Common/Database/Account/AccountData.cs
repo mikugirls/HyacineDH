@@ -15,16 +15,33 @@ public class AccountData : BaseDatabaseDataHelper
     [SugarColumn(IsNullable = true)]
     public string? Permissions { get; set; } // type: permission1,permission2,permission3...
 
+    public static string NormalizeUsername(string username)
+    {
+        username = username.Trim();
+        if (string.IsNullOrEmpty(username)) return "";
+        var atIndex = username.IndexOf('@');
+        if (atIndex > 0) username = username[..atIndex];
+        return username.Trim();
+    }
+
     public static AccountData? GetAccountByUserName(string username)
     {
-        AccountData? result = null;
-        DatabaseHelper.GetAllInstance<AccountData>()?.ForEach(account =>
+        username = NormalizeUsername(username);
+        if (string.IsNullOrEmpty(username)) return null;
+
+        // Prefer in-memory cache (UidInstanceMap) so token updates are consistent across handlers.
+        foreach (var instances in DatabaseHelper.UidInstanceMap.Values)
         {
-            if (!string.IsNullOrEmpty(account.Username) &&
-                string.Equals(account.Username, username, StringComparison.OrdinalIgnoreCase))
-                result = account;
-        });
-        return result;
+            var account = instances.OfType<AccountData>().FirstOrDefault();
+            if (account?.Username == null) continue;
+            if (string.Equals(account.Username, username, StringComparison.OrdinalIgnoreCase)) return account;
+        }
+
+        // Fallback to DB query (e.g. before cache is initialized).
+        return DatabaseHelper.GetAllInstance<AccountData>()
+            ?.FirstOrDefault(a =>
+                !string.IsNullOrEmpty(a.Username) &&
+                string.Equals(a.Username, username, StringComparison.OrdinalIgnoreCase));
     }
 
     public static AccountData? GetAccountByUid(int uid)

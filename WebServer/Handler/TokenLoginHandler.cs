@@ -31,9 +31,11 @@ public class TokenLoginHandler
         }
         else
         {
-            res.message = "HyacineLover@StarRail.mail";
-            res.data = new VerifyData(account!.Uid.ToString(), res.message, token);
-            res.data.account.name = account.Uid.ToString();
+            res.message = "OK";
+            var email = $"{account!.Username}@egglink.me";
+            res.data = new VerifyData(account.Uid.ToString(), email, token);
+            res.data.account.name = account.Username ?? "";
+            Logger.Debug($"Verify ok: username={account.Username}, uid={account.Uid}");
         }
 
         return new JsonResult(res);

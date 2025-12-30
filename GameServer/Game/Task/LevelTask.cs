@@ -51,6 +51,10 @@ public class LevelTask(PlayerInstance player)
         {
             var methodName = act.Type.Replace("RPG.GameCore.", "");
 
+            // 防止场景加载阶段触发 EnterMap/EnterMapByCondition 递归 LoadScene 导致栈溢出崩溃。
+            if (Player.IsSceneLoading && (methodName == nameof(EnterMap) || methodName == nameof(EnterMapByCondition)))
+                return;
+
             var method = GetType().GetMethod(methodName);
             if (method != null) _ = method.Invoke(this, [act, subMission, group]);
         }

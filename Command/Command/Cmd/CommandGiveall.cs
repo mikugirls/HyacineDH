@@ -303,20 +303,12 @@ public class CommandGiveall : ICommand
 
         foreach (var multiPathAvatar in GameData.MultiplePathAvatarConfigData.Values)
         {
-            if (player.AvatarManager!.GetFormalAvatar(multiPathAvatar.BaseAvatarID) == null)
-            {
-                await player.InventoryManager!.AddItem(multiPathAvatar.BaseAvatarID, 1, false, sync: false);
-                player.AvatarManager!.GetFormalAvatar(multiPathAvatar.BaseAvatarID)!.Level =
-                    Math.Max(Math.Min(1, 80), 0);
-                player.AvatarManager!.GetFormalAvatar(multiPathAvatar.BaseAvatarID)!.Promotion =
-                    GameData.GetMinPromotionForLevel(Math.Max(Math.Min(1, 80), 0));
-                player.AvatarManager!.GetFormalAvatar(multiPathAvatar.BaseAvatarID)!.GetCurPathInfo().Rank =
-                    Math.Max(Math.Min(0, 6), 0);
-            }
+            var avatarData = player.AvatarManager!.GetFormalAvatar(multiPathAvatar.BaseAvatarID);
+            if (avatarData == null) continue; // don't grant new avatars; use giveall avatar if needed
 
-            var avatarData = player.AvatarManager!.GetFormalAvatar(multiPathAvatar.BaseAvatarID)!;
             if (avatarData.PathInfos.ContainsKey(multiPathAvatar.AvatarID)) continue;
             if (multiPathAvatar.BaseAvatarID > 8000 && multiPathAvatar.AvatarID % 2 != 1) continue;
+            if (!Enum.IsDefined(typeof(MultiPathAvatarTypeEnum), multiPathAvatar.AvatarID)) continue;
             await player.ChangeAvatarPathType(multiPathAvatar.BaseAvatarID,
                 (MultiPathAvatarTypeEnum)multiPathAvatar.AvatarID);
         }

@@ -165,40 +165,25 @@ public class BattleManager(PlayerInstance player) : BasePlayerManager(player)
             return;
         }
 
-        GameData.StageConfigData.TryGetValue(eventId, out var stageConfig);
+        // 3.8 客户端这里的 event_id 往往是 PlaneEventId，而不是 StageId。
+        // 优先当作 StageId 解析；失败则回退用 PlaneEventId -> StageId 映射。
+        StageConfigExcel? stageConfig = null;
+        if (!GameData.StageConfigData.TryGetValue(eventId, out stageConfig))
+        {
+            if (GameData.PlaneEventData.TryGetValue(eventId * 10 + Player.Data.WorldLevel, out var planeEvent))
+                GameData.StageConfigData.TryGetValue(planeEvent.StageID, out stageConfig);
+        }
+
         if (stageConfig == null)
         {
-            GameData.StageConfigData.TryGetValue(eventId * 10 + Player.Data.WorldLevel, out stageConfig);
-            if (stageConfig == null)
-            {
-                await Player.SendPacket(new PacketSceneEnterStageScRsp());
-                return;
-            }
+            await Player.SendPacket(new PacketSceneEnterStageScRsp());
+            return;
         }
 
         if (NextBattleStageConfig != null)
         {
             stageConfig = NextBattleStageConfig;
             NextBattleStageConfig = null;
-        }
-
-        // Sanity check: if monster config data didn't load or ids are mismatched, client may fail to start battle.
-        // Keep this lightweight to avoid log spam.
-        var missing = 0;
-        foreach (var wave in stageConfig.MonsterList)
-        {
-            var ids = new[] { wave.Monster0, wave.Monster1, wave.Monster2, wave.Monster3, wave.Monster4 };
-            foreach (var id in ids)
-            {
-                if (id == 0) continue;
-                if (GameData.MonsterConfigData.ContainsKey(id)) continue;
-                missing++;
-            }
-        }
-        if (missing > 0)
-        {
-            Logger.GetByClassName()
-                .Warn($"Stage {stageConfig.StageID} 存在 {missing} 个怪物ID在 MonsterConfigData 中未找到，可能会导致客户端进战异常。");
         }
 
         BattleInstance battleInstance = new(Player, Player.LineupManager!.GetCurLineup()!, [stageConfig])
@@ -228,15 +213,25 @@ public class BattleManager(PlayerInstance player) : BasePlayerManager(player)
 
     public async ValueTask<BattleInstance?> StartCocoonStage(int cocoonId, int wave, int worldLevel)
     {
-        if (Player.BattleInstance != null) return null;
+        var (ret, battle) = await StartCocoonStageWithRetcode(cocoonId, wave, worldLevel);
+        return ret == Retcode.RetSucc ? battle : null;
+    }
+
+    public async ValueTask<(Retcode retcode, BattleInstance? battle)> StartCocoonStageWithRetcode(int cocoonId, int wave,
+        int worldLevel)
+    {
+        if (Player.BattleInstance != null) return (Retcode.RetInBattleNow, null);
+
+        if (worldLevel <= 0) worldLevel = Player.Data.WorldLevel;
 
         GameData.CocoonConfigData.TryGetValue(cocoonId * 100 + worldLevel, out var config);
-        if (config == null) return null;
+        if (config == null) return (Retcode.RetStageCocoonPropNotValid, null);
 
-        wave = Math.Min(Math.Max(wave, 1), config.MaxWave);
+        if (wave <= 0) wave = 1;
+        if (config.MaxWave > 0 && wave > config.MaxWave) return (Retcode.RetStageCocoonWaveOver, null);
 
         var cost = config.StaminaCost * wave;
-        if (Player.Data.Stamina < cost) return null;
+        if (Player.Data.Stamina < cost) return (Retcode.RetItemCostNotEnough, null);
 
         List<StageConfigExcel> stageConfigExcels = [];
         for (var i = 0; i < wave; i++)
@@ -248,7 +243,7 @@ public class BattleManager(PlayerInstance player) : BasePlayerManager(player)
             stageConfigExcels.Add(stageConfig);
         }
 
-        if (stageConfigExcels.Count == 0) return null;
+        if (stageConfigExcels.Count == 0) return (Retcode.RetStageConfigNotExist, null);
 
         BattleInstance battleInstance = new(Player, Player.LineupManager!.GetCurLineup()!, stageConfigExcels)
         {
@@ -274,11 +269,14 @@ public class BattleManager(PlayerInstance player) : BasePlayerManager(player)
         battleInstance.AvatarInfo = avatarList;
 
         Player.BattleInstance = battleInstance;
+        // call battle start
+        Player.RogueManager!.GetRogueInstance()?.OnBattleStart(battleInstance);
+        Player.ChallengeManager!.ChallengeInstance?.OnBattleStart(battleInstance);
         Player.QuestManager!.OnBattleStart(battleInstance);
 
         InvokeOnPlayerEnterBattle(Player, battleInstance);
         await ValueTask.CompletedTask;
-        return battleInstance;
+        return (Retcode.RetSucc, battleInstance);
     }
 
     public (Retcode, BattleInstance?) StartBattleCollege(int collegeId)

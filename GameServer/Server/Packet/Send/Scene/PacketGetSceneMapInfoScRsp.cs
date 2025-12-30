@@ -36,7 +36,7 @@ public class PacketGetSceneMapInfoScRsp : BasePacket
                 continue;
             }
 
-            var mapData = mapDatas.RandomElement();
+            var mapData = mapDatas.First();
             GameData.GetFloorInfo(mapData.PlaneID, mapData.FloorID, out var floorInfo);
             if (floorInfo == null)
             {
@@ -104,6 +104,14 @@ public class PacketGetSceneMapInfoScRsp : BasePacket
             else
             {
                 mazeMap.LightenSectionList.AddRange(floorInfo.MapSections.Select(x => (uint)x));
+            }
+
+            if (mazeMap.LightenSectionList.Count == 0)
+            {
+                foreach (var range in new[] { (0, 101), (10000, 10051), (20000, 20051), (30000, 30051) })
+                {
+                    for (var i = range.Item1; i < range.Item2; i++) mazeMap.LightenSectionList.Add((uint)i);
+                }
             }
 
             rsp.SceneMapInfo.Add(mazeMap);

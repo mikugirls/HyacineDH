@@ -1,6 +1,7 @@
 # HyacineDH
 
 **__此项目正在开发中！__**
+原仓库地址: [https://github.com/EggLinks/DanhengServer-OpenSource](https://github.com/EggLinks/DanhengServer-OpenSource)
 
 <p align="center">
 <a href="https://visualstudio.com"><img src="https://img.shields.io/badge/Visual%20Studio-000000.svg?style=for-the-badge&logo=visual-studio&logoColor=white" /></a>
@@ -8,10 +9,10 @@
 <a href="https://www.gnu.org/"><img src="https://img.shields.io/badge/GNU-000000.svg?style=for-the-badge&logo=GNU&logoColor=white" /></a>
 </p>
 <p align="center">
-  <a href="https://discord.gg/xRtZsmHBVj"><img src="https://img.shields.io/badge/Discord%20Server-000000.svg?style=for-the-badge&logo=Discord&logoColor=white" /></a>
+  <a href="https://discord.gg/AjBSd5rP5K"><img src="https://img.shields.io/badge/Discord%20Server-000000.svg?style=for-the-badge&logo=Discord&logoColor=white" /></a>
 </p>
 
-[EN](docs/README_en-US.md) | [簡中](README.md) | [繁中](README_zh-CN.md) | [JP](README_ja-JP.md)
+[EN](docs/README_en-US.md) | [簡中](README.md) | [繁中](docs/README_zh-CN.md) | [JP](docs/README_ja-JP.md)
 
 ## 💡功能
 
@@ -19,13 +20,13 @@
 - [√] **编队**
 - [√] **抽卡** - 自定义概率
 - [√] **战斗** - 场景技能中有一些错误
-- [√] **场景** - 行走模拟器、交互逻辑有问题、实体加载也有问题
-- [√] **基本的角色培养** - 全都是bug，但我认为没什么用: )
-- [√] **任务** - 并不支持，因为缺少proto
-- [√] **朋友** - 不支持好友支援系统
+- [√] **场景** - 行走模拟器、交互逻辑、实体加载
+- [√] **基本的角色培养** - 应该没问题
+- [√] **任务** - 并不支持
+- [√] **朋友** - 支持
 - [√] **忘却之庭 & 虚构叙事 & 末日幻影** - 异相仲裁正在开发中
-- [√] **模拟宇宙 & 黄金机械** - 你玩不了: )
-- [√] **成就** - 未必能用
+- [√] **模拟宇宙 & 黄金机械** - 无法游玩: )
+- [√] **成就** - 可用
 
 - [ ] **更多**  - Coming soon...
 
@@ -33,8 +34,9 @@
 
 ### 快速启动
 
-1. 在 [Action](https://github.com/StopWuyu/DanhengServer/actions) 下载可执行文件
+1. 在 [仓库发布页](https://github.com/DBKAHHK/HyacineDH/) 下载可执行文件 (暂时并未提供编译版本）
 2. 打开下载完成的 `DanhengServer.zip` 解压至任意文件夹 __*应当使用英文路径*__
+3. 提示：内置资源缓存。你可以直接启动服务器，而不必下载Resources
 
 > (可选) 在源代码的WebServer文件夹中下载 `certificate.p12` 使得以HTTPS模式启动 ~~没有用处~~: )
 
@@ -53,8 +55,8 @@ DanhengServer 使用 .NET Framework 构建
 ##### Windows
 
 ```shell
-git clone --recurse-submodules https://github.com/StopWuyu/DanhengServer.git
-cd DanhengServer
+git clone --recurse-submodules https://github.com/DBKAHHK/HyacineDH.git
+cd .\HyacineDH
 .\dotnet build # 编译
 ```
 ##### Linux （Ubuntu 20.04）
@@ -71,7 +73,7 @@ sudo apt-get update && \
 
 - 编译并运行环境
 ```shell
-git clone --recurse-submodules https://github.com/StopWuyu/DanhengServer.git
+git clone --recurse-submodules https://github.com/DBKAHHK/HyacineDH.git
 cd DanhengServer
 .\dotnet build # 编译
 ./Gameserver
@@ -94,4 +96,5 @@ cd DanhengServer
 - [SqlSugar](https://github.com/donet5/SqlSugar) - 提供 ORM
 - [LunarCore](https://github.com/Melledy/LunarCore) - 一些数据结构和算法
 - C1enQwq - 提供一些代码，还有原型文件
-- 哦对了，还有亲爱的Xeondev，是他们提供了Dispatch思路 （https://git.xeondev.com/HonkaiSlopRail/dahlia-sr-0.14.1）
+- Skuld - 我第一位测试者
+- StopWuyu及DanhengServer的其它开发者 - 本项目是DanhengServer的Fork仓库
