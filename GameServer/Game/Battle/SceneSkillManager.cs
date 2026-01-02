@@ -16,7 +16,7 @@ public class SceneSkillManager(PlayerInstance player) : BasePlayerManager(player
     public async ValueTask<SkillResultData> OnCast(SceneCastSkillCsReq req)
     {
         var scene = Player.SceneInstance;
-        if (scene == null) return new SkillResultData(Retcode.RetFail);
+        if (scene == null) return new SkillResultData(Retcode.RetFail, req.CastEntityId);
 
         var castEntityId = (int)req.CastEntityId;
         var attackedByEntityId = (int)req.AttackedByEntityId;
@@ -31,7 +31,7 @@ public class SceneSkillManager(PlayerInstance player) : BasePlayerManager(player
                                        ?? attackedByEntity;
 
         if (attackEntity == null)
-            return new SkillResultData(Retcode.RetSceneEntityNotExist);
+            return new SkillResultData(Retcode.RetSceneEntityNotExist, req.CastEntityId);
 
         // Build target list.
         var targetEntities = new List<BaseGameEntity>();
@@ -70,7 +70,7 @@ public class SceneSkillManager(PlayerInstance player) : BasePlayerManager(player
         // get ability file
         var abilities = GetAbilityConfig(attackEntity);
         if (abilities == null || abilities.AbilityList.Count < 1)
-            return new SkillResultData(Retcode.RetMazeNoAbility);
+            return new SkillResultData(Retcode.RetMazeNoAbility, req.CastEntityId != 0 ? req.CastEntityId : (uint)attackEntity.EntityId);
 
         var abilityName = !string.IsNullOrEmpty(req.MazeAbilityStr) ? req.MazeAbilityStr :
             req.SkillIndex == 0 ? "NormalAtk01" : "MazeSkill";
@@ -79,7 +79,7 @@ public class SceneSkillManager(PlayerInstance player) : BasePlayerManager(player
         {
             targetAbility = abilities.AbilityList.FirstOrDefault();
             if (targetAbility == null)
-                return new SkillResultData(Retcode.RetMazeNoAbility);
+                return new SkillResultData(Retcode.RetMazeNoAbility, req.CastEntityId != 0 ? req.CastEntityId : (uint)attackEntity.EntityId);
         }
 
         // execute ability
@@ -87,6 +87,7 @@ public class SceneSkillManager(PlayerInstance player) : BasePlayerManager(player
             attackEntity, targetEntities, req);
 
         var instance = res.Instance;
+        var triggerBattleInfos = res.BattleInfos;
 
         // Fallback: some client/build combinations don't include (or we fail to resolve) the AdventureTriggerAttack tasks
         // that should start a battle. If we clearly have an avatar casting at monsters, try to start battle anyway.
@@ -99,6 +100,14 @@ public class SceneSkillManager(PlayerInstance player) : BasePlayerManager(player
                 Logger.Debug(
                     $"Fallback StartBattle succeeded: uid={Player.Uid}, cast_entity_id={castEntityId}, attacked_by_entity_id={attackedByEntityId}, targets={targetEntities.Count}");
                 instance = battle;
+
+                // Newer clients appear to rely on `monster_battle_info` to drive the overworld-to-battle transition UI.
+                // When we start a battle via fallback, synthesize this list from the targets.
+                if (triggerBattleInfos == null || triggerBattleInfos.Count == 0)
+                    triggerBattleInfos = targetEntities
+                        .OfType<EntityMonster>()
+                        .Select(m => new HitMonsterInstance(m.EntityId, MonsterBattleType.TriggerBattle))
+                        .ToList();
             }
             else
             {
@@ -110,7 +119,8 @@ public class SceneSkillManager(PlayerInstance player) : BasePlayerManager(player
         // check if avatar execute
         if (attackEntity is AvatarSceneInfo) await Player.SceneInstance!.OnUseSkill(req);
 
-        return new SkillResultData(Retcode.RetSucc, instance, res.BattleInfos);
+        var effectiveCastEntityId = req.CastEntityId != 0 ? req.CastEntityId : (uint)attackEntity.EntityId;
+        return new SkillResultData(Retcode.RetSucc, effectiveCastEntityId, instance, triggerBattleInfos);
     }
 
     private AdventureAbilityConfigListInfo? GetAbilityConfig(BaseGameEntity entity)
@@ -128,5 +138,6 @@ public class SceneSkillManager(PlayerInstance player) : BasePlayerManager(player
 
 public record SkillResultData(
     Retcode RetCode,
+    uint EffectiveCastEntityId,
     BattleInstance? Instance = null,
     List<HitMonsterInstance>? TriggerBattleInfos = null);

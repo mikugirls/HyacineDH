@@ -201,6 +201,7 @@ public class BattleManager(PlayerInstance player) : BasePlayerManager(player)
         // call battle start
         Player.RogueManager!.GetRogueInstance()?.OnBattleStart(battleInstance);
         Player.ChallengeManager!.ChallengeInstance?.OnBattleStart(battleInstance);
+        Player.ChallengePeakManager?.OnBattleStart(battleInstance);
         Player.QuestManager!.OnBattleStart(battleInstance);
 
         Player.BattleInstance = battleInstance;
@@ -397,6 +398,9 @@ public class BattleManager(PlayerInstance player) : BasePlayerManager(player)
 
         if (Player.ChallengeManager?.ChallengeInstance != null)
             await Player.ChallengeManager!.ChallengeInstance.OnBattleEnd(battle, req);
+
+        if (Player.ChallengePeakManager != null)
+            await Player.ChallengePeakManager.OnBattleEnd(battle, req);
 
         if (Player.ActivityManager!.TrialActivityInstance != null && req.EndStatus == BattleEndStatus.BattleEndWin)
             await Player.ActivityManager.TrialActivityInstance.EndActivity(TrialActivityStatus.Finish);

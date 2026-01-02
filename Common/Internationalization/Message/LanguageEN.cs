@@ -41,6 +41,7 @@ public class WordTextEN
     public string Pet => "Pet";
     public string Relic => "Relic";
     public string Equipment => "Light Cone";
+    public string Skin => "Skin";
     public string Talent => "Talent";
     public string Banner => "Gacha";
     public string VideoKeys => "CG Keys";
@@ -278,10 +279,10 @@ public class GiveTextEN
 public class GiveAllTextEN
 {
     public string Desc =>
-        "Give the player all specified types of items\navatar means characters, equipment means light cones, relic means relic(artifact), unlock means chatBubbles, avatar(head icon), wallpaper";
+        "Give the player all specified types of items\navatar means characters, equipment means light cones, relic means relic(artifact), unlock means chatBubbles, avatar(head icon), wallpaper, skin means avatar skin";
 
     public string Usage =>
-        "Usage: /giveall avatar r<rank> l<level>\n\nUsage: /giveall equipment r<rank> l<level> x<amount>\n\nUsage: /giveall relic l<level> x<amount>\n\nUsage: /giveall unlock";
+        "Usage: /giveall avatar r<rank> l<level>\n\nUsage: /giveall equipment r<rank> l<level> x<amount>\n\nUsage: /giveall relic l<level> x<amount>\n\nUsage: /giveall unlock\n\nUsage: /giveall skin";
 
     public string GiveAllItems => "Gave all {0}, each {1} items";
 }

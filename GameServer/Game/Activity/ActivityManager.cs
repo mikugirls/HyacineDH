@@ -4,6 +4,7 @@ using EggLink.DanhengServer.Database.Activity;
 using EggLink.DanhengServer.GameServer.Game.Activity.Activities;
 using EggLink.DanhengServer.GameServer.Game.Player;
 using EggLink.DanhengServer.Proto;
+using EggLink.DanhengServer.Util;
 
 namespace EggLink.DanhengServer.GameServer.Game.Activity;
 
@@ -31,15 +32,33 @@ public class ActivityManager : BasePlayerManager
     public List<ActivityScheduleData> ToProto()
     {
         var proto = new List<ActivityScheduleData>();
+        var now = Extensions.GetUnixSec();
+        var forceAlwaysOpen = !ConfigManager.Config.ServerOption.EnableMission;
 
         foreach (var activity in GameData.ActivityConfig.ScheduleData)
+        {
+            var begin = activity.BeginTime;
+            var end = activity.EndTime;
+
+            if (forceAlwaysOpen)
+            {
+                begin = 0;
+                end = uint.MaxValue;
+            }
+            else
+            {
+                if (end > 0 && end < now) end = uint.MaxValue;
+                if (begin > now) begin = 0;
+            }
+
             proto.Add(new ActivityScheduleData
             {
                 ActivityId = (uint)activity.ActivityId,
-                BeginTime = activity.BeginTime,
-                EndTime = activity.EndTime,
+                BeginTime = begin,
+                EndTime = end,
                 PanelId = (uint)activity.PanelId
             });
+        }
 
         return proto;
     }

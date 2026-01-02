@@ -41,6 +41,7 @@ public class WordTextCHT
     public string Pet => "寵物";
     public string Relic => "遺器";
     public string Equipment => "光錐";
+    public string Skin => "皮膚";
     public string Talent => "行跡";
     public string Banner => "卡池";
     public string VideoKeys => "遊戲CG密鑰";
@@ -264,10 +265,10 @@ public class GiveTextCHT
 /// </summary>
 public class GiveAllTextCHT
 {
-    public string Desc => "給予玩家全部指定類型的物品\navatar意為角色，equipment意為光錐，relic意為遺器，unlock意為氣泡、手機壁紙、頭像";
+    public string Desc => "給予玩家全部指定類型的物品\navatar意為角色，equipment意為光錐，relic意為遺器，unlock意為氣泡、手機壁紙、頭像，skin意為皮膚";
 
     public string Usage =>
-        "用法：/giveall avatar r<星魂> l<等級>\n\n用法：/giveall equipment r<疊影> l<等級> x<數量>\n\n用法：/giveall relic l<等級> x<數量>\n\n用法：/giveall unlock";
+        "用法：/giveall avatar r<星魂> l<等級>\n\n用法：/giveall equipment r<疊影> l<等級> x<數量>\n\n用法：/giveall relic l<等級> x<數量>\n\n用法：/giveall unlock\n\n用法：/giveall skin";
 
     public string GiveAllItems => "已給予所有 {0}, 各 {1} 個";
 }

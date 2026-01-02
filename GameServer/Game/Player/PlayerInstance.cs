@@ -11,6 +11,7 @@ using EggLink.DanhengServer.GameServer.Game.Activity;
 using EggLink.DanhengServer.GameServer.Game.Avatar;
 using EggLink.DanhengServer.GameServer.Game.Battle;
 using EggLink.DanhengServer.GameServer.Game.Challenge;
+using EggLink.DanhengServer.GameServer.Game.ChallengePeak;
 using EggLink.DanhengServer.GameServer.Game.ChessRogue;
 using EggLink.DanhengServer.GameServer.Game.Drop;
 using EggLink.DanhengServer.GameServer.Game.Friend;
@@ -101,6 +102,7 @@ public class PlayerInstance(PlayerData data)
     public MailManager? MailManager { get; private set; }
     public FriendManager? FriendManager { get; private set; }
     public ChallengeManager? ChallengeManager { get; private set; }
+    public ChallengePeakManager? ChallengePeakManager { get; private set; }
 
     #endregion
 
@@ -189,6 +191,7 @@ public class PlayerInstance(PlayerData data)
         RogueTournManager = new RogueTournManager(this);
         RogueMagicManager = new RogueMagicManager(this);
         ChallengeManager = new ChallengeManager(this);
+        ChallengePeakManager = new ChallengePeakManager(this);
         TaskManager = new TaskManager(this);
         RaidManager = new RaidManager(this);
         StoryLineManager = new StoryLineManager(this);
@@ -313,6 +316,8 @@ public class PlayerInstance(PlayerData data)
         await SyncUnlockedAvatarSkins();
 
         ChallengeManager?.ResurrectInstance();
+        if (ChallengePeakManager != null)
+            await ChallengePeakManager.EnsureUnlockedInGuide();
         if (StoryLineManager != null)
             await StoryLineManager.OnLogin();
 
@@ -859,7 +864,8 @@ public class PlayerInstance(PlayerData data)
             return;
         }
 
-        if (plane.PlaneType == PlaneTypeEnum.Challenge && ChallengeManager!.ChallengeInstance == null)
+        if (plane.PlaneType == PlaneTypeEnum.Challenge && ChallengeManager!.ChallengeInstance == null &&
+            ChallengePeakManager?.IsInChallengePeak != true)
         {
             await EnterScene(100000103, 0, sendPacket);
             return;

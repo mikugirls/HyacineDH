@@ -77,6 +77,12 @@ public static class GameData
     public static Dictionary<int, ChallengeGroupExcel> ChallengeGroupData { get; private set; } = [];
     public static Dictionary<int, List<ChallengeRewardExcel>> ChallengeRewardData { get; private set; } = [];
 
+    public static Dictionary<int, ChallengePeakConfigExcel> ChallengePeakConfigData { get; private set; } = [];
+    public static Dictionary<int, ChallengePeakGroupConfigExcel> ChallengePeakGroupConfigData { get; private set; } = [];
+    public static Dictionary<int, ChallengePeakBossConfigExcel> ChallengePeakBossConfigData { get; private set; } = [];
+    public static Dictionary<int, List<ChallengePeakRewardExcel>> ChallengePeakRewardData { get; private set; } = [];
+    public static Dictionary<string, ChallengePeakConstValue> ChallengePeakCommonConstData { get; private set; } = [];
+
     #endregion
 
     #region Battle

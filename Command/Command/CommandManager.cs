@@ -5,6 +5,7 @@ using EggLink.DanhengServer.Kcp;
 using EggLink.DanhengServer.Util;
 using Spectre.Console;
 using static EggLink.DanhengServer.GameServer.Plugin.Event.PluginEvent;
+using System.Threading.Tasks;
 
 namespace EggLink.DanhengServer.Command.Command;
 
@@ -144,6 +145,44 @@ public class CommandManager
         Console.Write(newText);
     }
 
+    private static Task? ToTask(object? invokeResult)
+    {
+        if (invokeResult == null) return null;
+
+        if (invokeResult is Task task) return task;
+
+        if (invokeResult is ValueTask valueTask) return valueTask.AsTask();
+
+        var type = invokeResult.GetType();
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ValueTask<>))
+        {
+            var asTask = type.GetMethod("AsTask", BindingFlags.Public | BindingFlags.Instance);
+            if (asTask?.Invoke(invokeResult, null) is Task genericTask) return genericTask;
+        }
+
+        return null;
+    }
+
+    private void ExecuteMaybeAsync(string cmd, string input, MethodInfo method, ICommandSender sender,
+        object? invokeResult)
+    {
+        var task = ToTask(invokeResult);
+        if (task == null) return;
+
+        if (sender is ConsoleCommandSender)
+        {
+            task.GetAwaiter().GetResult();
+            return;
+        }
+
+        _ = task.ContinueWith(t =>
+        {
+            if (t.Exception != null)
+                Logger.Error($"Command failed: {cmd} ({method.Name}) input='{input}'",
+                    t.Exception.GetBaseException());
+        }, TaskContinuationOptions.OnlyOnFaulted);
+    }
+
     public void HandleCommand(string input, ICommandSender sender)
     {
         try
@@ -239,7 +278,9 @@ public class CommandManager
 
                     if (!canRun) continue;
                     isFound = true;
-                    method.Invoke(command, [arg]);
+                    Logger.Debug($"Execute command: {cmd} ({method.Name}) sender={sender.GetSender()} input='{input}'");
+                    var invokeResult = method.Invoke(command, [arg]);
+                    ExecuteMaybeAsync(cmd, input, method, sender, invokeResult);
                     break;
                 }
 
@@ -250,7 +291,9 @@ public class CommandManager
                     var attr = method.GetCustomAttribute<CommandDefaultAttribute>();
                     if (attr == null) continue;
                     isFound = true;
-                    method.Invoke(command, [arg]);
+                    Logger.Debug($"Execute command: {cmd} ({method.Name}) sender={sender.GetSender()} input='{input}'");
+                    var invokeResult = method.Invoke(command, [arg]);
+                    ExecuteMaybeAsync(cmd, input, method, sender, invokeResult);
                     break;
                 }
 

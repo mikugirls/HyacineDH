@@ -4,6 +4,7 @@ using EggLink.DanhengServer.Database.TrainParty;
 using EggLink.DanhengServer.Enums.Avatar;
 using EggLink.DanhengServer.Enums.Item;
 using EggLink.DanhengServer.GameServer.Server.Packet.Send.PlayerSync;
+using EggLink.DanhengServer.GameServer.Server.Packet.Send.Avatar;
 using EggLink.DanhengServer.Internationalization;
 
 namespace EggLink.DanhengServer.Command.Command.Cmd;
@@ -241,6 +242,40 @@ public class CommandGiveall : ICommand
 
         await arg.SendMsg(I18NManager.Translate("Game.Command.GiveAll.GiveAllItems",
             I18NManager.Translate("Word.Unlock"), "1"));
+    }
+
+    [CommandMethod("0 skin")]
+    public async ValueTask GiveAllSkin(CommandArg arg)
+    {
+        var player = arg.Target?.Player;
+        if (player == null)
+        {
+            await arg.SendMsg(I18NManager.Translate("Game.Command.Notice.PlayerNotFound"));
+            return;
+        }
+
+        var unlocked = 0;
+        foreach (var (skinId, skinExcel) in GameData.AvatarSkinData)
+        {
+            if (skinId <= 0 || skinExcel.AvatarID <= 0) continue;
+
+            if (player.PlayerUnlockData!.Skins.TryGetValue(skinExcel.AvatarID, out var skins) &&
+                skins.Contains(skinId))
+                continue;
+
+            if (!player.PlayerUnlockData!.Skins.TryGetValue(skinExcel.AvatarID, out skins))
+            {
+                skins = [];
+                player.PlayerUnlockData.Skins[skinExcel.AvatarID] = skins;
+            }
+
+            skins.Add(skinId);
+            unlocked++;
+            await player.SendPacket(new PacketUnlockAvatarSkinScNotify(skinId));
+        }
+
+        await arg.SendMsg(I18NManager.Translate("Game.Command.GiveAll.GiveAllItems",
+            I18NManager.Translate("Word.Skin"), unlocked.ToString()));
     }
 
     [CommandMethod("0 train")]
